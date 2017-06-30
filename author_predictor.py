@@ -1,5 +1,6 @@
 from keras.models import Sequential
-from keras.layers import SimpleRNN
+from keras.callbacks import ModelCheckpoint
+from keras.layers import LSTM, Dropout, Dense
 from keras.utils import np_utils
 import numpy as np
 from numpy import float32
@@ -25,7 +26,7 @@ def load_book(fname, distance = 100):
     input = []
     expected_output = []
 
-    with open(fname) as f:
+    with open(fname, encoding="utf8") as f:
         raw = f.read()
         raw = raw.lower()
 
@@ -34,8 +35,8 @@ def load_book(fname, distance = 100):
 
         n_chars = len(raw)
         n_vocab = len(chars)
-        print "Total Characters: ", n_chars
-        print "Total Vocab: ", n_vocab
+        print("Total Characters: ", n_chars)
+        print("Total Vocab: ", n_vocab)
 
         char_count = 0
 
@@ -45,7 +46,7 @@ def load_book(fname, distance = 100):
             input.append([char_to_int[char] for char in sequences_in])
             expected_output.append(char_to_int[sequences_out])
 
-        print len(input)
+        print(len(input))
 
         return (input, expected_output)
 
@@ -61,9 +62,15 @@ model.add(Dropout(0.2))
 model.add(Dense(Y.shape[1], activation='softmax'))
 model.compile(loss='categorical_crossentropy', optimizer='adam')
 
+with open('model.json','w') as f:
+    f.write(model.to_json())
+    exit()
+
 filepath="weights-improvement-{epoch:02d}-{loss:.4f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
 callbacks_list = [checkpoint]
 
 # fit the model
 model.fit(X, Y, epochs=20, batch_size=128, callbacks=callbacks_list)
+
+model.save_weights("final-model.hdf5")

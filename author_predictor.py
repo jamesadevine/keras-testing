@@ -27,6 +27,7 @@ def load_book(fname, distance = 100):
     expected_output = []
 
     with open(fname, encoding="utf8") as f:
+        print("Loading book: ",fname)
         raw = f.read()
         raw = raw.lower()
 
@@ -48,23 +49,34 @@ def load_book(fname, distance = 100):
 
         print(len(input))
 
-        return (input, expected_output)
+        return (np.array(input), np.array(expected_output))
 
-(input, categories) = load_book(authors[0]["book"])
+(input1, categories1) = load_book(authors[0]["book"])
+(input2, categories2) = load_book(authors[1]["book"])
+(input3, categories3) = load_book(authors[2]["book"])
 
-X = np.reshape(input, (len(input),len(input[0]),1))
-X = X / float(len(categories))
-Y = np_utils.to_categorical(categories)
+labels = [authors[0]["author"],authors[1]["author"],authors[2]["author"]]
+
+# normalize between 0 and one.
+input1 = input1 / float(len(categories1))
+input2 = input2 / float(len(categories2))
+input3 = input3 / float(len(categories3))
+
+inputs = np.concatenate((input1, input2, input3))
+
+X = np.array(inputs).reshape(len(inputs), len(inputs[0]),1)
+
+label1 = [[1,0,0]] * input1.shape[0]
+label2 = [[0,1,0]] * input2.shape[0]
+label3 = [[0,0,1]] * input3.shape[0]
+Y = np.concatenate((label1, label2, label3))
 
 model = Sequential()
-model.add(LSTM(256, input_shape=(X.shape[1], X.shape[2])))
-model.add(Dropout(0.2))
-model.add(Dense(Y.shape[1], activation='softmax'))
-model.compile(loss='categorical_crossentropy', optimizer='adam')
+model.add(LSTM(3, input_shape=(X.shape[1], X.shape[2])))
+model.compile(loss='mean_squared_error', optimizer='adam')
 
 with open('model.json','w') as f:
     f.write(model.to_json())
-    exit()
 
 filepath="weights-improvement-{epoch:02d}-{loss:.4f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
